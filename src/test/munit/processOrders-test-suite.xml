@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+    <munit:config name="munit" doc:name="MUnit configuration"/>
+    <spring:beans>
+        <spring:import resource="classpath:order-systems.xml"/>
+    </spring:beans>
+    <munit:before-test name="processOrders-test-suiteBefore_Test" description="Before tests actions">
+        <munit:set payload="#[[{'orderID':444, 'location':'international','price':14.01}, {'orderID':444, 'location':'international','price':14.01}, {'orderID':555, 'location':'domestic','price':14.01}]]" doc:name="Set Message: Set payload to contains International &amp; Domestic orders"/>
+    </munit:before-test>
+    <munit:test name="processOrders_payloadReturnsMapObjectWithTwoElements_True" description="Calling processOrders flow returns payload type as Java Map that contains two key/value pairs">
+        <flow-ref name="processOrders" doc:name="call processOrders"/>
+        <munit:assert-true message="FAILED: Expected payload's type to be Java Map, but found $[#[payload].getClass().getName()] instead!" condition="#[payload is java.util.Map]" doc:name="Assert True validates payload's datatype as Java Map"/>
+        <munit:assert-on-equals message="FAILED: Expected from payload to have 2 key/value pairs , but found #[payload.size()]." expectedValue="#[2]" actualValue="#[payload.size()]" doc:name="Assert Equals: Checks for the size of map"/>
+    </munit:test>
+    <munit:test name="processOrders_internationalKeyContainInternationalOrder_True" description="Calling processOrders flow returns international orders when key is international">
+        <flow-ref name="processOrders" doc:name="call processOrders"/>
+        <munit:assert-true message="FAILED: International key has no rows" condition="#[payload.'international'.size() &gt; 0]" doc:name="Assert True: Validate that international key has some rows"/>
+        <foreach collection="#[payload.'international']" doc:name="For Each: Row in international key, do...">
+            <munit:assert-on-equals message="FAILED: Location is not the international" expectedValue="international" actualValue="#[payload.'location']" doc:name="Assert Equals: Validate that location value is international"/>
+        </foreach>
+    </munit:test>
+    
+    <munit:test name="processOrders_domesticKeyContainDomesticOrder_True" description="Calling processOrders flow returns domestic orders when key is domestic">
+        <flow-ref name="processOrders" doc:name="call processOrders"/>
+        <munit:assert-true message="FAILED: Domestic key has no rows" condition="#[payload.'domestic'.size() &gt; 0]" doc:name="Assert True: Validate that domestic key has some rows"/>
+        <foreach collection="#[payload.'domestic']" doc:name="For Each: Row in domestic key, do...">
+            <munit:assert-on-equals message="FAILED: Location is not the domestic" expectedValue="domestic" actualValue="#[payload.'location']" doc:name="Assert Equals: Validate that location value is domestic"/>
+        </foreach>
+    </munit:test>
+    
+</mule>
